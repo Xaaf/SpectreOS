@@ -44,7 +44,7 @@ start:
 ;
 ; Print a string to the screen.
 ; Params:
-;       ds:si points to a string
+;       ds:si String to print
 ;
 puts:
     ; Save the registers that will be modified
@@ -86,16 +86,150 @@ main:
     mov ss, ax
     mov sp, 0x7C00      ; Stack goes down from where we load in memory (preventing overwriting our program)
 
+    ; Read something from the floppy
+    ; BIOS should set dl to drive number
+    mov [ebr_drive_number], dl
+
+    mov ax, 1           ; LBA = 1, second sector from the disk
+    mov cl, 1           ; 1 sector to read
+    mov bx, 0x7E00      ; Data should be stored after the bootloader
+    call disk_read
+
     ; Print 'Hello world!'
     mov si, msg_hello   ; Set si to msg_hello
     call puts           ; Call the method for printing a string
 
+    cli                 ; Disable interrupts, locking the CPU in "halt" state
     hlt                 ; Stop CPU from executing
 
-.halt:
-    jmp .halt
+;
+; Error Handlers
+;
 
-msg_hello: db 'Hello world!', ENDL, 0
+floppy_error:
+    mov si, msg_read_failed
+    call puts
+    jmp wait_key_and_reboot
+
+wait_key_and_reboot:
+    mov ah, 0
+    int 16h                             ; Wait for keypress
+
+    jmp 0FFFFh:0                        ; Jump to beginning of BIOS, effectively rebooting
+
+.halt:
+    cli                                 ; Disable interrupts, locking the CPU in "halt" state
+    hlt
+
+;
+; Disk routines
+;
+
+;
+; Convert an LBA address to a CHS address
+; Params:
+;       ax LBA Address
+; Return:
+;       cx [bits 0-5] Sector number
+;       cx [bits 6-15] Cylinder
+;       dh Head
+;
+lba_to_chs:
+    push ax
+    push dx
+
+    xor dx, dx                          ; dx = 0
+    div word [bdb_sectors_per_track]    ; ax = LBA / SectorsPerTrack
+                                        ; dx = LBA % SectorsPerTrack
+
+    inc dx                              ; dx = (LBA % SectorsPerTrack + 1), which is the sector
+    mov cx, dx                          ; Store this sector in cx
+
+    xor dx, dx                          ; dx = 0
+    div word [bdb_heads]                ; ax = (LBA / SectorsPerTrack) / Heads, which is the cylinder
+                                        ; dx = (LBA / SectorsPerTrack) % Heads, which is the head
+
+    mov dh, dl                          ; dh is now the head
+    mov ch, al                          ; ch is the cylinder (lower 8 bits)
+    shl ah, 6
+    or cl, ah                           ; Put the upper 2 bits of the cylinder into cl
+
+    pop ax
+    mov dl, al                          ; Restore dl
+    pop ax
+
+    ret
+
+;
+; Reads sectors from a disk.
+; Params:
+;       ax LBA Address
+;       cl Number of sectors to read (up to 128)
+;       dl Drive number
+;       es:bx Memory address where the read data will be stored
+;
+disk_read:
+    ; Save registers that will be modified
+    push ax
+    push bx
+    push cx
+    push dx
+    push di
+
+    push cx             ; Save cl to the stack
+    call lba_to_chs     ; Convert the address
+    pop ax              ; al is the number of sectors to read
+    
+    mov ah, 02h
+    mov di, 3           ; Retry count (floppy unreliability has the documentation recommend to retry reading three times)
+
+.retry:
+    pusha               ; Save all registers, since we don't know what the bios modifies
+    stc                 ; Set the carry flag, since some BIOS don't set it
+    int 13h             ; If the carry flag cleared, we can jump out of the loop
+    jnc .done           ; Jump if the carry is not set
+    
+    ; Execute when a read fails
+    popa
+    call disk_reset
+    
+    dec di
+    test di, di         ; Check if di is zero
+    jnz .retry
+
+.fail:
+    ; All three attempts failed
+    jmp floppy_error
+
+.done:
+    popa
+
+    ; Restore modified registers
+    pop di
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+
+    ret
+
+;
+; Reset disk controller.
+; Params:
+;       dl Drive number
+;
+disk_reset:
+    pusha
+    mov ah, 0
+    stc
+    int 13h
+    jc floppy_error
+    popa
+
+    ret
+
+msg_hello:          db 'Hello world!', ENDL, 0
+msg_read_failed:    db 'Failed to read from disk!', ENDL, 0
 
 times 510-($-$$) db 0   ; $ is the memory offset of the current line,
                         ; $$ is the memory offset of the beginning of the current section
