@@ -39,7 +39,55 @@ ebr_system_id:              db 'FAT12   '           ; 8 bytes
 ; Bootloader
 ;
 start:
-    jmp main                            ; Make sure the prgram starts at the main section
+    ; Set up data segments
+    mov ax, 0                           ; Can't write to ds/es directly
+    mov ds, ax
+    mov es, ax
+
+    ; Set up the stack
+    mov ss, ax
+    mov sp, 0x7C00                      ; Stack goes down from where we load in memory (preventing overwriting our program)
+
+    ; Some BIOS have a different start, so make sure we are in the expected memory location
+    push es
+    push word .after
+    retf
+
+.after:
+    ; Read something from the floppy
+    ; BIOS should set dl to drive number
+    mov [ebr_drive_number], dl
+
+    mov ax, 1                           ; LBA = 1, second sector from the disk
+    mov cl, 1                           ; 1 sector to read
+    mov bx, 0x7E00                      ; Data should be stored after the bootloader
+    call disk_read
+
+    ; Print loading message
+    mov si, msg_loading                   ; Set si to msg_loading
+    call puts                           ; Call the method for printing a string
+
+    cli                                 ; Disable interrupts, locking the CPU in "halt" state
+    hlt                                 ; Stop CPU from executing
+
+;
+; Error Handlers
+;
+
+floppy_error:
+    mov si, msg_read_failed
+    call puts
+    jmp wait_key_and_reboot
+
+wait_key_and_reboot:
+    mov ah, 0
+    int 16h                             ; Wait for keypress
+
+    jmp 0FFFFh:0                        ; Jump to beginning of BIOS, effectively rebooting
+
+.halt:
+    cli                                 ; Disable interrupts, locking the CPU in "halt" state
+    hlt
 
 ;
 ; Print a string to the screen.
@@ -75,51 +123,6 @@ puts:
     pop si
 
     ret
-
-main:
-    ; Set up data segments
-    mov ax, 0                           ; Can't write to ds/es directly
-    mov ds, ax
-    mov es, ax
-
-    ; Set up the stack
-    mov ss, ax
-    mov sp, 0x7C00                      ; Stack goes down from where we load in memory (preventing overwriting our program)
-
-    ; Read something from the floppy
-    ; BIOS should set dl to drive number
-    mov [ebr_drive_number], dl
-
-    mov ax, 1                           ; LBA = 1, second sector from the disk
-    mov cl, 1                           ; 1 sector to read
-    mov bx, 0x7E00                      ; Data should be stored after the bootloader
-    call disk_read
-
-    ; Print 'Hello world!'
-    mov si, msg_hello                   ; Set si to msg_hello
-    call puts                           ; Call the method for printing a string
-
-    cli                                 ; Disable interrupts, locking the CPU in "halt" state
-    hlt                                 ; Stop CPU from executing
-
-;
-; Error Handlers
-;
-
-floppy_error:
-    mov si, msg_read_failed
-    call puts
-    jmp wait_key_and_reboot
-
-wait_key_and_reboot:
-    mov ah, 0
-    int 16h                             ; Wait for keypress
-
-    jmp 0FFFFh:0                        ; Jump to beginning of BIOS, effectively rebooting
-
-.halt:
-    cli                                 ; Disable interrupts, locking the CPU in "halt" state
-    hlt
 
 ;
 ; Disk routines
@@ -228,7 +231,7 @@ disk_reset:
 
     ret
 
-msg_hello:          db 'Hello world!', ENDL, 0
+msg_loading:          db 'Loading...', ENDL, 0
 msg_read_failed:    db 'Failed to read from disk!', ENDL, 0
 
 times 510-($-$$) db 0                   ; $ is the memory offset of the current line,
