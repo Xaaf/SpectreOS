@@ -64,8 +64,23 @@ start:
     call disk_read
 
     ; Print loading message
-    mov si, msg_loading                   ; Set si to msg_loading
+    mov si, msg_loading                 ; Set si to msg_loading
     call puts                           ; Call the method for printing a string
+
+    ; Read drive parameters (sectors per track and head count), instead of 
+    ; relying on data on the formatted disk
+    push es
+    mov ah, 08h
+    int 13h
+    jc floppy_error
+    pop es
+
+    and cl, 0x3F                        ; Remove top 2 bits
+    xor ch, ch
+    mov [bdb_sectors_per_track], cx     ; Sector count
+
+    inc dh
+    mov [bdb_heads], dh                 ; Head count
 
     cli                                 ; Disable interrupts, locking the CPU in "halt" state
     hlt                                 ; Stop CPU from executing
