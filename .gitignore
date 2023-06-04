@@ -1,4 +1,8 @@
+# Build
 build/
+
+# VSCode
+.vscode/
 
 # Bochs
 bx_enh_dbg.ini
