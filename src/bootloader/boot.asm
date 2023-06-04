@@ -82,6 +82,122 @@ start:
     inc dh
     mov [bdb_heads], dh                 ; Head count
 
+    ; Read FAT root directory
+    mov ax, [bdb_sectors_per_fat]       ; lba of root directory = reserved + fats * sectors_per_fat
+    mov bl, [bdb_fat_count]
+    xor bh, bh
+    mul bx                              ; ax = (fats * sectors_per_fat)
+    add ax, [bdb_reserved_sectors]      ; ax = lba of root directory
+    push ax
+
+    mov ax, [bdb_dir_entries_count]     ; Size of root directory = (32 * number_of_entries) / bytes_per_sector
+    shl ax, 5                           ; ax *= 32
+    xor dx, dx                          ; dx = 0
+    div word [bdb_bytes_per_sector]     ; Number of sectors to read
+
+    test dx, dx                         ; If dx != 0, add 1
+    jz .root_dir_after
+    inc ax                              ; Division remainder != 0, add 1
+                                        ; This means that a sector is only partially filled with entries
+
+.root_dir_after:
+    ; Read root directory
+    mov cl, al                          ; Number of sectors to read = size of root directory
+    pop ax                              ; lba of root directory
+    mov dl, [ebr_drive_number]          ; Set dl to drive number
+    mov bx, buffer                      ; es:bx = buffer
+    call disk_read
+
+    ; Search for kernel.bin
+    xor bx, bx
+    mov di, buffer
+
+.search_kernel:
+    mov si, file_kernel_bin             ; Store the kernel.bin file in the si register
+    mov cx, 11                          ; Compare up to 11 characters
+    push di
+    repe cmpsb                          ; repe repeats a string instruction until cx reaches 0
+                                        ; cmpsb compares two bytes located at ds:si and es:di
+
+    pop di
+    je .found_kernel                    ; We found the kernel!
+
+    add di, 32                          ; Move to the next directory entry
+    inc bx
+    cmp bx, [bdb_dir_entries_count]     ; Check if there are entries left
+    jl .search_kernel                   ; If there are, restart this loop
+
+    jmp kernel_not_found_error          ; Kernel couldn't be found
+
+.found_kernel:
+    ; di should have he address to the entry
+    mov ax, [di + 26]                   ; First logical cluster field has offset 26
+    mov [kernel_cluster], ax
+
+    ; Load FAT from disk into memory
+    mov ax, [bdb_reserved_sectors]
+    mov bx, buffer
+    mov cl, [bdb_sectors_per_fat]
+    mov dl, [ebr_drive_number]
+    call disk_read
+
+    ; Read kernel and process FAT chain
+    mov bx, KERNEL_LOAD_SEGMENT
+    mov es, bx
+    mov bx, KERNEL_LOAD_OFFSET
+
+.load_kernel_loop:
+    ; Read next cluster
+    mov ax, [kernel_cluster]
+
+    add ax, 31                          ; First cluster = (cluster number - 2) * sectors_per_cluster + start_sector
+                                        ; Start sector = reserved + fats + root directory size
+
+    mov cl, 1
+    mov dl, [ebr_drive_number]
+    call disk_read
+    
+    add bx, [bdb_bytes_per_sector]      ; Will overflow if the kernel.bin file is larger than 64 kb
+
+    ; Get location of the next cluster
+    mov ax, [kernel_cluster]
+    mov cx, 3
+    mul cx
+    mov cx, 2
+    div cx                              ; ax = index of entry in FAT, dx = cluster % 2
+
+    mov si, buffer
+    add si, ax
+    mov ax, [ds:si]                     ; Read entry from FAT table at index
+
+    or dx, dx
+    jz .even
+
+.odd:
+    shr ax, 4
+    jmp .next_cluster_after
+
+.even:
+    and ax, 0x0FFF
+
+.next_cluster_after:
+    cmp ax, 0x0FF8                      ; End of the file data chain
+    jae .read_finish
+
+    mov [kernel_cluster], ax
+    jmp .load_kernel_loop
+
+.read_finish:
+    ; Jump to the kernel
+    mov dl, [ebr_drive_number]          ; Boot device into dl
+    mov ax, KERNEL_LOAD_SEGMENT         ; Set segment registers
+    mov ds, ax
+    mov es, ax
+
+    jmp KERNEL_LOAD_SEGMENT:KERNEL_LOAD_OFFSET
+
+    jmp wait_key_and_reboot             ; This should never run
+
     cli                                 ; Disable interrupts, locking the CPU in "halt" state
     hlt                                 ; Stop CPU from executing
 
@@ -94,6 +210,12 @@ floppy_error:
     call puts
     jmp wait_key_and_reboot
 
+kernel_not_found_error:
+    mov si, msg_kernel_not_found
+    call puts
+    jmp wait_key_and_reboot
+
+
 wait_key_and_reboot:
     mov ah, 0
     int 16h                             ; Wait for keypress
@@ -102,7 +224,7 @@ wait_key_and_reboot:
 
 .halt:
     cli                                 ; Disable interrupts, locking the CPU in "halt" state
-    hlt
+    hlt                                 ; Stop CPU from executing
 
 ;
 ; Print a string to the screen.
@@ -246,10 +368,18 @@ disk_reset:
 
     ret
 
-msg_loading:          db 'Loading...', ENDL, 0
-msg_read_failed:    db 'Failed to read from disk!', ENDL, 0
+msg_loading:            db 'Loading...', ENDL, 0
+msg_read_failed:        db 'Failed to read from disk!', ENDL, 0
+msg_kernel_not_found:   db 'KERNEL.BIN file not found!', ENDL, 0
+file_kernel_bin:        db 'KERNEL  BIN'    ; Padded with spaces to get 11 characters
+kernel_cluster:         dw 0
+
+KERNEL_LOAD_SEGMENT     equ 0x2000
+KERNEL_LOAD_OFFSET      equ 0
 
 times 510-($-$$) db 0                   ; $ is the memory offset of the current line,
                                         ; $$ is the memory offset of the beginning of the current section
 
 dw 0AA55h                               ; Write 2 byte value
+
+buffer:
