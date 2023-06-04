@@ -3,11 +3,43 @@ ASM=nasm
 SRC_DIR=src
 BUILD_DIR=build
 
-# Create the floppy with 1.440kb of size
-$(BUILD_DIR)/main_floppy.img: $(BUILD_DIR)/main.bin
-	cp $(BUILD_DIR)/main.bin $(BUILD_DIR)/main_floppy.img
-	truncate -s 1440k $(BUILD_DIR)/main_floppy.img
+.PHONY: all floppy_image kernel bootloader clean always
 
-# Compile the main.asm file
-$(BUILD_DIR)/main.bin: $(SRC_DIR)/main.asm
-	$(ASM) $(SRC_DIR)/main.asm -f bin -o $(BUILD_DIR)/main.bin
+#
+#	Build to a floppy image
+#
+floppy_image: $(BUILD_DIR)/main_floppy.img
+$(BUILD_DIR)/main_floppy.img: bootloader kernel
+	dd if=/dev/zero of=$(BUILD_DIR)/main_floppy.img bs=512 count=2880
+	mkfs.fat -F 12 -n "SPECTRE OS" $(BUILD_DIR)/main_floppy.img
+
+	dd if=$(BUILD_DIR)/bootloader.bin of=$(BUILD_DIR)/main_floppy.img conv=notrunc
+	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
+
+#
+#	Build Bootloader
+#
+bootloader: $(BUILD_DIR)/bootloader.bin
+
+$(BUILD_DIR)/bootloader.bin: always
+	$(ASM) $(SRC_DIR)/bootloader/boot.asm -f bin -o $(BUILD_DIR)/bootloader.bin
+
+#
+#	Build Kernel
+#
+kernel: $(BUILD_DIR)/kernel.bin
+
+$(BUILD_DIR)/kernel.bin:  always
+	$(ASM) $(SRC_DIR)/kernel/kernel.asm -f bin -o $(BUILD_DIR)/kernel.bin
+
+#
+#	Always
+#
+always:
+	mkdir -p $(BUILD_DIR)
+
+#
+#	Clean
+#
+clean:
+	rm -rf $(BUILD_DIR)/*
