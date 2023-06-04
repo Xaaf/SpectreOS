@@ -1,3 +1,7 @@
+;
+;   boot.asm
+;
+
 org 0x7C00              ; Use this offset
 bits 16                 ; Start in 16-bit mode (emitting 16-bit code)
 
