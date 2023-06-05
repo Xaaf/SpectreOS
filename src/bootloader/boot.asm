@@ -58,11 +58,6 @@ start:
     ; BIOS should set dl to drive number
     mov [ebr_drive_number], dl
 
-    mov ax, 1                           ; LBA = 1, second sector from the disk
-    mov cl, 1                           ; 1 sector to read
-    mov bx, 0x7E00                      ; Data should be stored after the bootloader
-    call disk_read
-
     ; Print loading message
     mov si, msg_loading                 ; Set si to msg_loading
     call puts                           ; Call the method for printing a string
@@ -214,7 +209,6 @@ kernel_not_found_error:
     mov si, msg_kernel_not_found
     call puts
     jmp wait_key_and_reboot
-
 
 wait_key_and_reboot:
     mov ah, 0
@@ -369,7 +363,7 @@ disk_reset:
     ret
 
 msg_loading:            db 'Loading...', ENDL, 0
-msg_read_failed:        db 'Failed to read from disk!', ENDL, 0
+msg_read_failed:        db 'Failed read from disk!', ENDL, 0
 msg_kernel_not_found:   db 'KERNEL.BIN file not found!', ENDL, 0
 file_kernel_bin:        db 'KERNEL  BIN'    ; Padded with spaces to get 11 characters
 kernel_cluster:         dw 0
