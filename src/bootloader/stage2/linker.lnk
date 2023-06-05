@@ -3,7 +3,7 @@ OPTION QUIET,
         NODEFAULTLIBS,
         START=entry,
         VERBOSE,
-        OFFSET=0
+        OFFSET=0,
         STACK=0x200
 ORDER
     CLNAME CODE
