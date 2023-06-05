@@ -19,6 +19,8 @@ On a Linux system, you can use the following command to install all required pac
 apt install gcc make nasm qemu
 ```
 
+At this moment, you'll also need to have the [Watcom compiler](https://github.com/open-watcom/open-watcom-v2/) installed, for the freestanding C code.
+
 For debugging, you'll also need these packages.
 ```sh
 apt install bochs bochs-sdl bochsbios vgabios
