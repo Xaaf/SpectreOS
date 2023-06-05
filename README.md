@@ -16,7 +16,7 @@ If you want to have a look at SpectreOS in its current state, here's how to do i
 ### Requirements
 On a Linux system, you can use the following command to install all required packages to get started.
 ```sh
-apt install make nasm qemu 
+apt install gcc make nasm qemu
 ```
 
 For debugging, you'll also need these packages.
