@@ -3,6 +3,6 @@
 
 void _cdecl cstart_(uint16_t bootDrive)
 {
-    puts("Hello from C!");
+    puts("Hello from C!\r\n");
     for(;;);
 }
