@@ -108,7 +108,7 @@ start:
     mov di, buffer
 
 .search_stage2:
-    mov si, file_final_bin             ; Store the stage2.bin file in the si register
+    mov si, file_stage2_bin             ; Store the stage2.bin file in the si register
     mov cx, 11                          ; Compare up to 11 characters
     push di
     repe cmpsb                          ; repe repeats a string instruction until cx reaches 0
@@ -364,8 +364,8 @@ disk_reset:
 
 msg_loading:            db 'Loading...', ENDL, 0
 msg_read_failed:        db 'Failed read from disk!', ENDL, 0
-msg_stage2_not_found:   db 'FINAL.BIN file not found!', ENDL, 0
-file_final_bin:         db 'FINAL   BIN'    ; Padded with spaces to get 11 characters
+msg_stage2_not_found:   db 'STAGE2.BIN file not found!', ENDL, 0
+file_stage2_bin:        db 'STAGE2  BIN'    ; Padded with spaces to get 11 characters
 stage2_cluster:         dw 0
 
 STAGE2_LOAD_SEGMENT     equ 0x2000
