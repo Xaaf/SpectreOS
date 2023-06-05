@@ -108,7 +108,7 @@ start:
     mov di, buffer
 
 .search_kernel:
-    mov si, file_kernel_bin             ; Store the kernel.bin file in the si register
+    mov si, file_final_bin             ; Store the kernel.bin file in the si register
     mov cx, 11                          ; Compare up to 11 characters
     push di
     repe cmpsb                          ; repe repeats a string instruction until cx reaches 0
@@ -364,8 +364,8 @@ disk_reset:
 
 msg_loading:            db 'Loading...', ENDL, 0
 msg_read_failed:        db 'Failed read from disk!', ENDL, 0
-msg_kernel_not_found:   db 'KERNEL.BIN file not found!', ENDL, 0
-file_kernel_bin:        db 'KERNEL  BIN'    ; Padded with spaces to get 11 characters
+msg_kernel_not_found:   db 'FINAL.BIN file not found!', ENDL, 0
+file_final_bin:         db 'FINAL   BIN'    ; Padded with spaces to get 11 characters
 kernel_cluster:         dw 0
 
 KERNEL_LOAD_SEGMENT     equ 0x2000

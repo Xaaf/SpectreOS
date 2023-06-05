@@ -1,5 +1,5 @@
 ;
-;   kernel.asm
+;   main.asm
 ;
 
 org 0x7C00                              ; Use this offset
@@ -8,7 +8,7 @@ bits 16                                 ; Start in 16-bit mode (emitting 16-bit 
 %define ENDL 0x0D, 0x0A
 
 main:
-    ; Print 'Hello from Kernel!'
+    ; Print 'Hello from Stage 2!'
     mov si, msg_hello                   ; Set si to msg_hello
     call puts                           ; Call the method for printing a string
 
@@ -51,4 +51,4 @@ puts:
 
     ret
 
-msg_hello: db 'Hello from Kernel!', ENDL, 0
+msg_hello: db 'Hello from Stage 2!', ENDL, 0
