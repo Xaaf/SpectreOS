@@ -103,31 +103,31 @@ start:
     mov bx, buffer                      ; es:bx = buffer
     call disk_read
 
-    ; Search for kernel.bin
+    ; Search for stage2.bin
     xor bx, bx
     mov di, buffer
 
-.search_kernel:
-    mov si, file_final_bin             ; Store the kernel.bin file in the si register
+.search_stage2:
+    mov si, file_final_bin             ; Store the stage2.bin file in the si register
     mov cx, 11                          ; Compare up to 11 characters
     push di
     repe cmpsb                          ; repe repeats a string instruction until cx reaches 0
                                         ; cmpsb compares two bytes located at ds:si and es:di
 
     pop di
-    je .found_kernel                    ; We found the kernel!
+    je .found_stage2                    ; We found the stage2!
 
     add di, 32                          ; Move to the next directory entry
     inc bx
     cmp bx, [bdb_dir_entries_count]     ; Check if there are entries left
-    jl .search_kernel                   ; If there are, restart this loop
+    jl .search_stage2                   ; If there are, restart this loop
 
-    jmp kernel_not_found_error          ; Kernel couldn't be found
+    jmp stage2_not_found_error          ; stage2 couldn't be found
 
-.found_kernel:
+.found_stage2:
     ; di should have he address to the entry
     mov ax, [di + 26]                   ; First logical cluster field has offset 26
-    mov [kernel_cluster], ax
+    mov [stage2_cluster], ax
 
     ; Load FAT from disk into memory
     mov ax, [bdb_reserved_sectors]
@@ -136,14 +136,14 @@ start:
     mov dl, [ebr_drive_number]
     call disk_read
 
-    ; Read kernel and process FAT chain
-    mov bx, KERNEL_LOAD_SEGMENT
+    ; Read stage2 and process FAT chain
+    mov bx, STAGE2_LOAD_SEGMENT
     mov es, bx
-    mov bx, KERNEL_LOAD_OFFSET
+    mov bx, STAGE2_LOAD_OFFSET
 
-.load_kernel_loop:
+.load_stage2_loop:
     ; Read next cluster
-    mov ax, [kernel_cluster]
+    mov ax, [stage2_cluster]
 
     add ax, 31                          ; First cluster = (cluster number - 2) * sectors_per_cluster + start_sector
                                         ; Start sector = reserved + fats + root directory size
@@ -152,10 +152,10 @@ start:
     mov dl, [ebr_drive_number]
     call disk_read
     
-    add bx, [bdb_bytes_per_sector]      ; Will overflow if the kernel.bin file is larger than 64 kb
+    add bx, [bdb_bytes_per_sector]      ; Will overflow if the stage2.bin file is larger than 64 kb
 
     ; Get location of the next cluster
-    mov ax, [kernel_cluster]
+    mov ax, [stage2_cluster]
     mov cx, 3
     mul cx
     mov cx, 2
@@ -179,17 +179,17 @@ start:
     cmp ax, 0x0FF8                      ; End of the file data chain
     jae .read_finish
 
-    mov [kernel_cluster], ax
-    jmp .load_kernel_loop
+    mov [stage2_cluster], ax
+    jmp .load_stage2_loop
 
 .read_finish:
-    ; Jump to the kernel
+    ; Jump to the stage2
     mov dl, [ebr_drive_number]          ; Boot device into dl
-    mov ax, KERNEL_LOAD_SEGMENT         ; Set segment registers
+    mov ax, STAGE2_LOAD_SEGMENT         ; Set segment registers
     mov ds, ax
     mov es, ax
 
-    jmp KERNEL_LOAD_SEGMENT:KERNEL_LOAD_OFFSET
+    jmp STAGE2_LOAD_SEGMENT:STAGE2_LOAD_OFFSET
 
     jmp wait_key_and_reboot             ; This should never run
 
@@ -205,8 +205,8 @@ floppy_error:
     call puts
     jmp wait_key_and_reboot
 
-kernel_not_found_error:
-    mov si, msg_kernel_not_found
+stage2_not_found_error:
+    mov si, msg_stage2_not_found
     call puts
     jmp wait_key_and_reboot
 
@@ -364,12 +364,12 @@ disk_reset:
 
 msg_loading:            db 'Loading...', ENDL, 0
 msg_read_failed:        db 'Failed read from disk!', ENDL, 0
-msg_kernel_not_found:   db 'FINAL.BIN file not found!', ENDL, 0
+msg_stage2_not_found:   db 'FINAL.BIN file not found!', ENDL, 0
 file_final_bin:         db 'FINAL   BIN'    ; Padded with spaces to get 11 characters
-kernel_cluster:         dw 0
+stage2_cluster:         dw 0
 
-KERNEL_LOAD_SEGMENT     equ 0x2000
-KERNEL_LOAD_OFFSET      equ 0
+STAGE2_LOAD_SEGMENT     equ 0x2000
+STAGE2_LOAD_OFFSET      equ 0
 
 times 510-($-$$) db 0                   ; $ is the memory offset of the current line,
                                         ; $$ is the memory offset of the beginning of the current section
