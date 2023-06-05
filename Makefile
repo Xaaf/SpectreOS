@@ -1,5 +1,7 @@
 ASM=nasm
 CC=gcc
+CC16=/usr/bin/watcom/binl64/wcc
+LD16=/usr/bin/watcom/binl64/wlink
 
 SRC_DIR=src
 TOOLS_DIR=tools
@@ -26,11 +28,17 @@ $(BUILD_DIR)/main_floppy.img: bootloader kernel
 #
 bootloader: stage1 stage2
 
+#
+#	Stage 1 bootloader
+#
 stage1: $(BUILD_DIR)/stage1.bin
 
 $(BUILD_DIR)/stage1.bin: always
 	$(MAKE) -C $(SRC_DIR)/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR))
 
+#
+#	Stage 2 bootloader
+#
 stage2: $(BUILD_DIR)/stage2.bin
 
 $(BUILD_DIR)/stage2.bin: always
