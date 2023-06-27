@@ -8,7 +8,7 @@ all: stage1
 stage1: $(BUILD_DIR)/boot.bin
 
 #
-#	Build boot.bin
+#	Build stage1.bin
 #
 $(BUILD_DIR)/boot.bin:
 	$(ASM) boot.asm -f bin -o $(BUILD_DIR)/stage1.bin
