@@ -2,6 +2,12 @@
 ;   boot.asm
 ;
 [org 0x7C00]                ; Add to the offsets
+bits 16                     ; Emit 16-bit code
+
+    jmp start
+    nop                     ; Skip to next instruction
+
+start:
     xor ax, ax              ; Set it to zero
     mov ds, ax              ; ds = 0
     mov ss, ax              ; Stack starts at 0
@@ -22,7 +28,7 @@
     mov ax, 0xB800          ; Text video memory
     mov es, ax
 
-    mov si, msg             ; Point to the message
+    mov si, msg_boot             ; Point to the message
     call sprint
 
     mov ax, 0xB800          ; Look at video memory
@@ -103,15 +109,29 @@ hexloop:
 ; -----------------------------------------------------------------------------
 ;   Variables
 ; -----------------------------------------------------------------------------
-xpos        db 0
-ypos        db 0
-hexstr      db '0123456789ABCDEF'
-outstr16    db '0000', 0    ; Register value string
-reg16       dw 0            ; Pass values to printreg16
-msg         db "Welcome to SpectreOS!", 0
+xpos                db 0
+ypos                db 0
+hexstr              db '0123456789ABCDEF'
+outstr16            db '0000', 0    ; Register value string
+reg16               dw 0            ; Pass values to printreg16
+
+msg_boot            db 'Booting up SpectreOS...', 0
+msg_read_fail       db 'Failed to boot SpectreOS.', 0
+msg_stage2_fail     db 'STAGE2.BIN file not found!', 0
+
+; Files should be padded to 11 characters
+file_stage2         db 'STAGE2  BIN'
+
+; Stage 2 values
+stage2_cluster      dw 0
+
+STAGE2_LOAD_SEGMENT equ 0x2000
+STAGE2_LOAD_OFFSET  equ 0
 
 ;
 ;   Padding the bootsector
 ;
 times 510-($-$$) db 0
 db 0xAA55                   ; Some BIOSes require this to identify the bootsector
+
+buffer:
