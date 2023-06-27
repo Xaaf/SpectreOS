@@ -31,13 +31,9 @@ apt install bochs bochs-sdl bochsbios vgabios
 ```sh
 git clone https://github.com/Xaaf/SpectreOS.git
 ```
-2. Build the project
+2. Build the project and run it!
 ```sh
-make
-```
-3. Run it!
-```sh
-chmod +x ./run.sh && ./run.sh
+make run
 ```
 
 ## Roadmap
