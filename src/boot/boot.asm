@@ -36,7 +36,9 @@
 hang:
     jmp hang
 
-
+; ----------------------------------------------------------------------------- 
+;   Printing functions
+; -----------------------------------------------------------------------------
 dochar: call cprint
 
 ;
@@ -98,6 +100,9 @@ hexloop:
 
     ret
 
+; -----------------------------------------------------------------------------
+;   Variables
+; -----------------------------------------------------------------------------
 xpos        db 0
 ypos        db 0
 hexstr      db '0123456789ABCDEF'
@@ -105,6 +110,8 @@ outstr16    db '0000', 0    ; Register value string
 reg16       dw 0            ; Pass values to printreg16
 msg         db "Welcome to SpectreOS!", 0
 
+;
+;   Padding the bootsector
+;
 times 510-($-$$) db 0
-db 0x55
-db 0xAA
+db 0xAA55                   ; Some BIOSes require this to identify the bootsector
