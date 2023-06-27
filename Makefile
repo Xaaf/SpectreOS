@@ -1,64 +1,31 @@
 ASM=nasm
-CC=gcc
-CC16=/usr/bin/watcom/binl64/wcc
-LD16=/usr/bin/watcom/binl64/wlink
+QEMU=qemu-system-i386
+
+QEMU_FLAGS=-fda
 
 SRC_DIR=src
-TOOLS_DIR=tools
 BUILD_DIR=build
 
-.PHONY: all floppy_image kernel bootloader tools_fat clean always
+.PHONY: all always clean floppy_image run
 
-all: floppy_image tools_fat
+all: floppy_image
 
 #
-#	Build to a floppy image
+#	Build to Floppy
 #
-floppy_image: $(BUILD_DIR)/main_floppy.img
-$(BUILD_DIR)/main_floppy.img: bootloader kernel
-	dd if=/dev/zero of=$(BUILD_DIR)/main_floppy.img bs=512 count=2880
-	mkfs.fat -F 12 -n "SPECTRE OS" $(BUILD_DIR)/main_floppy.img
+floppy_image: $(BUILD_DIR)/spectre.img
+$(BUILD_DIR)/spectre.img: bootloader
+	dd if=/dev/zero of=$(BUILD_DIR)/spectre.img bs=512 count=2880
+	mkfs.fat -F 12 -n "SPECTRE OS" $(BUILD_DIR)/spectre.img
 
-	dd if=$(BUILD_DIR)/stage1.bin of=$(BUILD_DIR)/main_floppy.img conv=notrunc
-	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/stage2.bin "::stage2.bin"
-	mcopy -i $(BUILD_DIR)/main_floppy.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
+	dd if=$(BUILD_DIR)/boot.bin of=$(BUILD_DIR)/spectre.img conv=notrunc
 
 #
 #	Build Bootloader
 #
-bootloader: stage1 stage2
-
-#
-#	Stage 1 bootloader
-#
-stage1: $(BUILD_DIR)/stage1.bin
-
-$(BUILD_DIR)/stage1.bin: always
-	$(MAKE) -C $(SRC_DIR)/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR))
-
-#
-#	Stage 2 bootloader
-#
-stage2: $(BUILD_DIR)/stage2.bin
-
-$(BUILD_DIR)/stage2.bin: always
-	$(MAKE) -C $(SRC_DIR)/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR))
-
-#
-#	Build Kernel
-#
-kernel: $(BUILD_DIR)/kernel.bin
-
-$(BUILD_DIR)/kernel.bin:  always
-	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
-
-#
-#	Build Tools
-#
-tools_fat: $(BUILD_DIR)/tools/fat
-$(BUILD_DIR)/tools/fat: always $(TOOLS_DIR)/fat/fat.c
-	mkdir -p $(BUILD_DIR)/tools
-	$(CC) -g -o $(BUILD_DIR)/tools/fat $(TOOLS_DIR)/fat/fat.c
+bootloader: $(BUILD_DIR)/boot.bin
+$(BUILD_DIR)/boot.bin: always
+	$(ASM) $(SRC_DIR)/boot/boot.asm -f bin -o $(BUILD_DIR)/boot.bin
 
 #
 #	Always
@@ -67,10 +34,13 @@ always:
 	mkdir -p $(BUILD_DIR)
 
 #
+#	Run
+#
+run: floppy_image
+	$(QEMU) $(QEMU_FLAGS) $(BUILD_DIR)/spectre.img
+
+#
 #	Clean
 #
 clean:
-	$(MAKE) -C $(SRC_DIR)/bootloader/stage1 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	$(MAKE) -C $(SRC_DIR)/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	$(MAKE) -C $(SRC_DIR)/kernel BUILD_DIR=$(abspath $(BUILD_DIR)) clean
-	rm -rf $(BUILD_DIR)/*
+	rm -rf $(BUILD_DIR)
