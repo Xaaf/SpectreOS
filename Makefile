@@ -19,14 +19,12 @@ $(BUILD_DIR)/spectre.img: bootloader
 	mkfs.fat -F 12 -n "SPECTRE OS" $(BUILD_DIR)/spectre.img
 
 	dd if=$(BUILD_DIR)/stage1.bin of=$(BUILD_DIR)/spectre.img conv=notrunc
+	mcopy -i $(BUILD_DIR)/spectre.img $(BUILD_DIR)/stage2.bin "::stage2.bin"
 
 #
 #	Build Bootloader
 #
-# bootloader: $(BUILD_DIR)/boot.bin
-# $(BUILD_DIR)/boot.bin: always
-# 	$(ASM) $(SRC_DIR)/boot/boot.asm -f bin -o $(BUILD_DIR)/boot.bin
-bootloader: stage1
+bootloader: stage1 stage2
 
 #
 #	Stage 1 Bootloader
@@ -35,6 +33,14 @@ stage1: $(BUILD_DIR)/stage1.bin
 
 $(BUILD_DIR)/stage1.bin: always
 	$(MAKE) -C $(SRC_DIR)/boot/stage1 BUILD_DIR=$(abspath $(BUILD_DIR))
+	
+#
+#	Stage 2 Bootloader
+#
+stage2: $(BUILD_DIR)/stage2.bin
+
+$(BUILD_DIR)/stage2.bin: always
+	$(MAKE) -C $(SRC_DIR)/boot/stage2 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 #	Always
@@ -53,4 +59,5 @@ run: floppy_image
 #
 clean:
 	$(MAKE) -C $(SRC_DIR)/boot/stage1 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
+	$(MAKE) -C $(SRC_DIR)/boot/stage2 BUILD_DIR=$(abspath $(BUILD_DIR)) clean
 	rm -rf $(BUILD_DIR)
