@@ -8,11 +8,21 @@ bits 16                     ; Emit 16-bit code
     nop                     ; Skip to next instruction
 
 start:
+    ; Setup data segments
     xor ax, ax              ; Set it to zero
     mov ds, ax              ; ds = 0
+    mov es, ax
+
+    ; Stack setup
     mov ss, ax              ; Stack starts at 0
     mov sp, 0x9C00
 
+    ; Make sure we're in the expected location in memory
+    push es
+    push word .after
+    retf
+
+.after:
     cld                     ; Clear direction flag
 
     ; Reset video mode (this clears the screen)
