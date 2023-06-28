@@ -1,10 +1,11 @@
 BUILD_DIR?=build/
-ASM?=nasm
-ASMFLAGS=?-f obj
 
-CC16?=/usr/bin/watcom/bin164/wcc
+ASM?=nasm
+ASMFLAGS?=-f obj
+
+CC16?=/usr/bin/watcom/binl64/wcc
 CFLAGS16?=-4 -d3 -s -wx -ms -zl -zq -za99	# See Watcom documentation for information
-LD16?=/usr/bin/watcom/bin164/wlink
+LD16?=/usr/bin/watcom/binl64/wlink
 
 SOURCES_C=$(wildcard *.c)
 SOURCES_ASM=$(wildcard *.asm)
@@ -21,7 +22,7 @@ all: stage2
 stage2: $(BUILD_DIR)/stage2.bin
 
 $(BUILD_DIR)/stage2.bin: $(OBJECTS_ASM) $(OBJECTS_C)
-	$(LD16) NAME $(BUILD_DIR)/stage2.bin \{ $(OBJECTS_ASM) $(OBJECTS_C) \} OPTION MAP=$(BUILD_DIR)/stage2.map @linker.linker
+	$(LD16) NAME $(BUILD_DIR)/stage2.bin FILE \{ $(OBJECTS_ASM) $(OBJECTS_C) \} OPTION MAP=$(BUILD_DIR)/stage2.map @linker.lnk
 
 #
 #	Compile C to objects
