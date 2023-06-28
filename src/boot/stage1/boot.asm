@@ -429,6 +429,6 @@ STAGE2_LOAD_OFFSET  equ 0
 ;   Padding the bootsector
 ;
 times 510-($-$$) db 0
-db 0xAA55                           ; Some BIOSes require this to identify the bootsector
+dw 0AA55h                           ; Some BIOSes require this to identify the bootsector
 
 buffer:
