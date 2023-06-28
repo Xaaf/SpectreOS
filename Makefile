@@ -15,11 +15,11 @@ all: floppy_image
 #
 floppy_image: $(BUILD_DIR)/spectre.img
 $(BUILD_DIR)/spectre.img: bootloader
-	dd if=/dev/zero of=$(BUILD_DIR)/spectre.img bs=512 count=2880
-	mkfs.fat -F 12 -n "SPECTRE OS" $(BUILD_DIR)/spectre.img
+	dd if=/dev/zero of=$(BUILD_DIR)/fs.img bs=512 count=2880
+	mkfs.fat -F 12 -n "SPECTRE OS" $(BUILD_DIR)/fs.img
 
-	dd if=$(BUILD_DIR)/stage1.bin of=$(BUILD_DIR)/spectre.img conv=notrunc
-	mcopy -i $(BUILD_DIR)/spectre.img $(BUILD_DIR)/stage2.bin "::stage2.bin"
+	mcopy -i $(BUILD_DIR)/fs.img $(BUILD_DIR)/stage2.bin "::stage2.bin"
+	cat $(BUILD_DIR)/stage1.bin $(BUILD_DIR)/fs.img > $(BUILD_DIR)/spectre.img
 
 #
 #	Build Bootloader
