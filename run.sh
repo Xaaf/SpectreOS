@@ -1,0 +1,1 @@
+qemu-system-x86_64 -L /usr/share/ovmf/ -pflash ovmf/OVMF.fd -cdrom build/Spectre.iso
