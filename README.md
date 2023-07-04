@@ -32,11 +32,16 @@ make run
 
 ## Roadmap
 This roadmap will list features that are possible to be implemented in the somewhat near future. Things like "having a GUI" and such will be added later down the line, if this project progresses that far! Note that the order in which these are listed does not define the order in which I'd like to implement them. This is more so just a rough sketch of what's to come for SpectreOS!
-- [ ] Move the kernel into C
+- [ ] File loading under UEFI
+- [ ] Graphical frame buffer (GOP)
+- [ ] Text rendering
+- [ ] Logging to a file
+
+<!-- - [ ] Move the kernel into C
 - [ ] Implement a simple logging system
 - [ ] Interruption and execution handling
 - [ ] Memory mapping & the heap (`malloc` and `free`)
-- [ ] Capturing keyboard input
+- [ ] Capturing keyboard input -->
 
 ## Credits
 For a list of credits and acknowledgements, check the [credits](https://github.com/Xaaf/SpectreOS/blob/main/CREDITS)!
