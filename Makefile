@@ -6,11 +6,13 @@ QEMU       = qemu-system-x86_64
 OVMF_DIR   = /usr/share/ovmf/
 OVMF	   = ovmf/OVMF.fd
 
-SRC_DIR    = src
 GNU_DIR    = gnu-efi
 BUILD_DIR  = build
 
-.PHONY: all run kernel fat iso always clean
+# Bootloader & Kernel folders
+BOOTLOADER = bootloader
+
+.PHONY: all run bootloader fat iso always clean
 
 #
 #	All
@@ -41,7 +43,7 @@ $(BUILD_DIR)/spectre.iso: fat
 # Create the FAT filesystem
 #
 fat: $(BUILD_DIR)/spectre_fat.img
-$(BUILD_DIR)/spectre_fat.img: kernel
+$(BUILD_DIR)/spectre_fat.img: bootloader
 	dd if=/dev/zero of=$(BUILD_DIR)/spectre_fat.img bs=1k count=1440
 	mformat -i $(BUILD_DIR)/spectre_fat.img -f 1440 ::
 	mmd -i $(BUILD_DIR)/spectre_fat.img ::/EFI
@@ -49,15 +51,16 @@ $(BUILD_DIR)/spectre_fat.img: kernel
 	mcopy -i $(BUILD_DIR)/spectre_fat.img $(BUILD_DIR)/BOOTx64.EFI ::/EFI/BOOT
 
 #
-#	Kernel
-# Build the kernel
+#	Bootloader
+# Build the bootloader
 #
-kernel: $(BUILD_DIR)/BOOTx64.EFI
+bootloader: $(BUILD_DIR)/BOOTx64.EFI
 $(BUILD_DIR)/BOOTx64.EFI: always
-	$(GCC) $(CFLAGS) -o $(BUILD_DIR)/main.o $(SRC_DIR)/main.c
-	$(GCC) $(CFLAGS) -o $(BUILD_DIR)/data.o $(GNU_DIR)/lib/data.c
+#   $(GCC) $(CFLAGS) -o $(BUILD_DIR)/main.o $(SRC_DIR)/bootloader/main.c
+# 	$(GCC) $(CFLAGS) -o $(BUILD_DIR)/data.o $(GNU_DIR)/lib/data.c
+	$(MAKE) -C $(BOOTLOADER) GNU_DIR=$(abspath $(GNU_DIR)) BUILD_DIR=$(abspath $(BUILD_DIR))
 
-	$(GCC) $(LDFLAGS) -o $(BUILD_DIR)/BOOTx64.EFI $(BUILD_DIR)/main.o $(BUILD_DIR)/data.o
+#	$(GCC) $(LDFLAGS) -o $(BUILD_DIR)/BOOTx64.EFI $(BUILD_DIR)/main.o $(BUILD_DIR)/data.o
 
 #
 #	Always
