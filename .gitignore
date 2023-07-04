@@ -6,7 +6,3 @@ build/
 
 # OVMF
 ovmf/
-
-# Bochs
-bx_enh_dbg.ini
-logs/
