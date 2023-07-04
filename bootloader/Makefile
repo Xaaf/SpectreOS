@@ -1,7 +1,11 @@
-GCC       ?= x86_64-w64-mingw32-gcc
-CFLAGS	  ?= -I/usr/share/gnu-efi/inc -I/usr/share/gnu-efi/inc/x86_64 -I/usr/share/gnu-efi/inc/protocol -ffreestanding -fpic -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -c
-LDFLAGS	  ?= -nostdlib -Wl,-dll -shared -Wl,--subsystem,10 -e efi_main
+GNU       ?= /usr/share/gnu-efi
 
+GCC       ?= x86_64-w64-mingw32-gcc
+LD        ?= ld
+
+CFLAGS	  ?= -I$(GNU)/inc -I$(GNU)/inc/x86_64 -I$(GNU)/inc/protocol -ffreestanding -fpic -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -c
+LDFLAGS	  ?= -shared -Bsymbolic -L$(GNU)/x86_64/lib -L$(GNU)/x86_64/gnuefi -T$(GNU)/gnuefi/elf_x86_64_efi.lds $(GNU)/x86_64/gnuefi/crt0-efi-x86_64.o
+OBJCFLAGS ?= -j .text -j .sdata -j .data -j .dynamic -j .dynsym  -j .rel -j .rela -j .rel.* -j .rela.* -j .reloc --target efi-app-x86_64 --subsystem=10
 
 SRC_DIR    = src
 GNU_DIR   ?= gnu-efi
@@ -19,12 +23,14 @@ all: bootloader
 #	Bootloader
 # Compile the bootloader
 #
-bootloader: $(BUILD_DIR)/BOOTx64.EFI
-$(BUILD_DIR)/BOOTx64.EFI: always
+bootloader: $(BUILD_DIR)/boot.efi
+$(BUILD_DIR)/boot.efi: always
 	$(GCC) $(CFLAGS) -o $(BUILD_DIR)/bootloader/main.o $(SRC_DIR)/main.c
-	$(GCC) $(CFLAGS) -o $(BUILD_DIR)/bootloader/data.o $(GNU_DIR)/lib/data.c
 
-	$(GCC) $(LDFLAGS) -o $(BUILD_DIR)/BOOTx64.EFI $(BUILD_DIR)/bootloader/main.o $(BUILD_DIR)/bootloader/data.o
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/bootloader/main.o -o $(BUILD_DIR)/bootloader/main.so -lgnuefi -lefi
+#	$(GCC) $(LDFLAGS) -o $(BUILD_DIR)/BOOTx64.EFI $(BUILD_DIR)/bootloader/main.o $(BUILD_DIR)/bootloader/data.o
+
+#	objcopy $(OBJCFLAGS) $(BUILD_DIR)/bootloader/main.so $(BUILD_DIR)/boot.efi
 
 #
 #	Always
@@ -38,6 +44,5 @@ always:
 # Clean up the build files
 #
 clean: 
-	rm -f $(BUILD_DIR)/main.o
-	rm -f $(BUILD_DIR)/data.o
-	rm -f $(BUILD_DIR)/BOOTx64.EFI
+	rm -rf $(BUILD_DIR)/bootloader/
+	rm -f $(BUILD_DIR)/boot.efi

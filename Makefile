@@ -1,5 +1,7 @@
+GNU        ?= /usr/share/gnu-efi/inc
+
 GCC        = x86_64-w64-mingw32-gcc
-CFLAGS	   = -I/usr/share/gnu-efi/inc -I/usr/share/gnu-efi/inc/x86_64 -I/usr/share/gnu-efi/inc/protocol -ffreestanding -fpic -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -c
+CFLAGS	   = -I$(GNU)/lib -I$(GNU)/lib/x86_64 -I$(GNU)/lib/protocol -ffreestanding -fpic -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -c
 LDFLAGS	   = -nostdlib -Wl,-dll -shared -Wl,--subsystem,10 -e efi_main
 
 QEMU       = qemu-system-x86_64
@@ -54,8 +56,8 @@ $(BUILD_DIR)/spectre_fat.img: bootloader
 #	Bootloader
 # Build the bootloader
 #
-bootloader: $(BUILD_DIR)/BOOTx64.EFI
-$(BUILD_DIR)/BOOTx64.EFI: always
+bootloader: $(BUILD_DIR)/boot.efi
+$(BUILD_DIR)/boot.efi: always
 #   $(GCC) $(CFLAGS) -o $(BUILD_DIR)/main.o $(SRC_DIR)/bootloader/main.c
 # 	$(GCC) $(CFLAGS) -o $(BUILD_DIR)/data.o $(GNU_DIR)/lib/data.c
 	$(MAKE) -C $(BOOTLOADER) GNU_DIR=$(abspath $(GNU_DIR)) BUILD_DIR=$(abspath $(BUILD_DIR))
