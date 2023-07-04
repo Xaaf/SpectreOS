@@ -14,9 +14,9 @@ SpectreOS is an operating system that I started working on looking for something
 If you want to have a look at SpectreOS in its current state, here's how to do it!
 
 ### Requirements
-On a Linux system, you can use the following command to install all required packages to get started.
+On an apt-based system, you can use the following command to install all required packages to get started - `sudo` privileges might be required.
 ```sh
-apt install gcc make nasm qemu
+apt install qemu ovmf gnu-efi binutils-mingw-w64 gcc-mingw-w64 xorriso mtools
 ```
 
 At this moment, you'll also need to have the [Watcom compiler](https://github.com/open-watcom/open-watcom-v2/) installed, for the freestanding C code.
