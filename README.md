@@ -25,6 +25,7 @@ apt install qemu ovmf gnu-efi binutils-mingw-w64 gcc-mingw-w64 xorriso mtools
 git clone https://github.com/Xaaf/SpectreOS.git
 ```
 2. Make sure you've got `OVMF.fd` copied over to `ovmf/`. Otherwise the project won't run!
+3. Edit `Makefile`'s `CFLAGS` variable to contain a correct path to `gnu-efi`.
 3. Build the project and run it!
 ```sh
 make run
