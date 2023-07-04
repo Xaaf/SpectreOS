@@ -1,5 +1,5 @@
 GCC       ?= x86_64-w64-mingw32-gcc
-CFLAGS	  ?= -ffreestanding -I/home/xaaf/Prereqs/gnu-efi/inc -I/home/xaaf/Prereqs/gnu-efi/inc/x86_64 -I/home/xaaf/Prereqs/gnu-efi/inc/protocol -c
+CFLAGS	  ?= -ffreestanding -I/usr/share/gnu-efi/inc -I/usr/share/gnu-efi/inc/x86_64 -I/usr/share/gnu-efi/inc/protocol -c
 LDFLAGS	  ?= -nostdlib -Wl,-dll -shared -Wl,--subsystem,10 -e efi_main
 
 
